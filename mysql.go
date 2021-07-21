@@ -1,4 +1,4 @@
-package confmysql
+package confgorm
 
 import (
 	"fmt"
