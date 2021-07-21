@@ -12,7 +12,7 @@ import (
 type Mysql struct {
 	Host               string `env:""`
 	Port               int    `env:""`
-	Username           string `env:""`
+	User               string `env:""`
 	Password           string `env:""`
 	Dbname             string `env:""`
 	MaxOpenConns       int
@@ -52,7 +52,7 @@ func (my *Mysql) initial() {
 
 	_dsn_ := `%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local`
 	dsn := fmt.Sprintf(_dsn_,
-		my.Username, my.Password,
+		my.User, my.Password,
 		my.Host, my.Port,
 		my.Dbname)
 
