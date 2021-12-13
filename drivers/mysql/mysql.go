@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-jarvis/confgormmysql/magrator"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -18,6 +19,9 @@ type MysqlDriver struct {
 	MaxOpenConns       int
 	MaxIdleConns       int
 	ConnMaxIdleSeconds int
+
+	// database to magrate
+	Database magrator.Database
 
 	*gorm.DB
 }
