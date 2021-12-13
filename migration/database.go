@@ -1,4 +1,4 @@
-package magrator
+package migration
 
 func NewDatabase(name string) *Database {
 	return &Database{
@@ -12,7 +12,7 @@ type Database struct {
 	tables []interface{}
 }
 
-func (db *Database) Register(table interface{}) {
+func (db *Database) AddTable(table interface{}) {
 	// todo: checking table
 	db.tables = append(db.tables, table)
 }

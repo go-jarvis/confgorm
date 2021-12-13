@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-jarvis/confgorm/magrator"
+	"github.com/go-jarvis/confgorm/migration"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,15 +15,15 @@ type MysqlDriver struct {
 	Port               int    `env:""`
 	User               string `env:""`
 	Password           string `env:""`
-	Dbname             string `env:""`
+	DbName             string `env:""`
 	MaxOpenConns       int
 	MaxIdleConns       int
 	ConnMaxIdleSeconds int
 
 	// database to magrate
-	Database magrator.Database
+	MigrationDB *migration.Database `env:"-"`
 
-	*gorm.DB
+	*gorm.DB `env:"-"`
 }
 
 func (my *MysqlDriver) SetDefaults() {
@@ -86,11 +86,13 @@ func (my *MysqlDriver) livenessChecking() {
 
 	for {
 		// liveness checking every 60s
-		if err := my.ping(); err == nil {
+		err := my.ping()
+		if err == nil {
 			time.Sleep(60 * time.Second)
 			continue
 		}
 
+		logrus.Errorf("db ping failed: %v", err)
 		// retry
 		counter := 0
 		for {
@@ -114,7 +116,7 @@ func (my *MysqlDriver) conn() error {
 	dsn := fmt.Sprintf(_dsn_,
 		my.User, my.Password,
 		my.Host, my.Port,
-		my.Dbname)
+		my.DbName)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
