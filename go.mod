@@ -1,4 +1,4 @@
-module github.com/go-jarvis/confgormmysql
+module github.com/go-jarvis/confgorm
 
 go 1.16
 

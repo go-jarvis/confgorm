@@ -1,5 +1,5 @@
 package drivers
 
-import "github.com/go-jarvis/confgormmysql/drivers/mysql"
+import "github.com/go-jarvis/confgorm/drivers/mysql"
 
 type MysqlDriver = mysql.MysqlDriver
