@@ -1,15 +1,14 @@
-package confgorm
+package mysql
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-type Mysql struct {
+type MysqlDriver struct {
 	Host               string `env:""`
 	Port               int    `env:""`
 	User               string `env:""`
@@ -19,10 +18,10 @@ type Mysql struct {
 	MaxIdleConns       int
 	ConnMaxIdleSeconds int
 
-	db *gorm.DB
+	*gorm.DB
 }
 
-func (my *Mysql) SetDefaults() {
+func (my *MysqlDriver) SetDefaults() {
 	if my.Port == 0 {
 		my.Port = 3306
 	}
@@ -34,21 +33,27 @@ func (my *Mysql) SetDefaults() {
 		my.MaxIdleConns = 10
 	}
 	if my.MaxOpenConns == 0 {
-		my.MaxOpenConns = 20
+		my.MaxOpenConns = 30
 	}
 	if my.ConnMaxIdleSeconds == 0 {
-		my.ConnMaxIdleSeconds = 30
+		my.ConnMaxIdleSeconds = 1800
 	}
 }
 
-func (my *Mysql) Init() {
+func (my *MysqlDriver) Init() {
 	my.SetDefaults()
-	if my.db == nil {
-		my.initial()
+	if my.DB == nil {
+		my.conn()
 	}
 }
 
-func (my *Mysql) initial() {
+// livenessProbe liveness checking
+func (my *MysqlDriver) livenessProbe() {
+
+}
+
+// conn database connection
+func (my *MysqlDriver) conn() error {
 
 	_dsn_ := `%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local`
 	dsn := fmt.Sprintf(_dsn_,
@@ -58,19 +63,22 @@ func (my *Mysql) initial() {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	sqldb, err := db.DB()
 	if err != nil {
-		sqldb.SetConnMaxIdleTime(time.Duration(my.ConnMaxIdleSeconds) * time.Second)
-		sqldb.SetMaxIdleConns(my.MaxIdleConns)
-		sqldb.SetMaxOpenConns(my.MaxOpenConns)
+		return err
 	}
 
-	my.db = db
+	sqldb.SetConnMaxIdleTime(time.Duration(my.ConnMaxIdleSeconds) * time.Second)
+	sqldb.SetMaxIdleConns(my.MaxIdleConns)
+	sqldb.SetMaxOpenConns(my.MaxOpenConns)
+	my.DB = db
+
+	return nil
 }
 
-func (my *Mysql) DB() *gorm.DB {
-	return my.db
+func (my *MysqlDriver) DBDriver() *gorm.DB {
+	return my.DB
 }
