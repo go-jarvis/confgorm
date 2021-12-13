@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -42,14 +43,64 @@ func (my *MysqlDriver) SetDefaults() {
 
 func (my *MysqlDriver) Init() {
 	my.SetDefaults()
+
 	if my.DB == nil {
-		my.conn()
+		_ = my.conn()
 	}
+
+	go my.livenessChecking()
 }
 
-// livenessProbe liveness checking
-func (my *MysqlDriver) livenessProbe() {
+func (my *MysqlDriver) ping() error {
+	sqldb, err := my.DB.DB()
+	if err != nil {
+		return err
+	}
 
+	return sqldb.Ping()
+}
+
+func (my *MysqlDriver) retry(counter int) (err error) {
+
+	// max retry interval 30s
+	if counter > 6 {
+		counter = 6
+	}
+	t := time.Duration(counter) * 5 * time.Second
+	time.Sleep(t)
+
+	err = my.conn()
+	if err == nil {
+		return nil
+	}
+
+	return err
+}
+
+// livenessChecking liveness checking
+func (my *MysqlDriver) livenessChecking() {
+
+	for {
+		// liveness checking every 60s
+		if err := my.ping(); err == nil {
+			time.Sleep(60 * time.Second)
+			continue
+		}
+
+		// retry
+		counter := 0
+		for {
+			err := my.retry(counter)
+			if err != nil {
+				logrus.Errorf("db retried to connect %d times", counter)
+
+				counter += 1
+				continue
+			}
+
+			break
+		}
+	}
 }
 
 // conn database connection
@@ -68,6 +119,10 @@ func (my *MysqlDriver) conn() error {
 
 	sqldb, err := db.DB()
 	if err != nil {
+		return err
+	}
+
+	if err := sqldb.Ping(); err != nil {
 		return err
 	}
 
