@@ -122,8 +122,8 @@ func (my *MysqlDriver) conn() error {
 		my.User, my.Password,
 		my.Host, my.Port,
 		my.DbName,
-
-		my.ConnectionOptions)
+		my.ConnectionOptions,
+	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
