@@ -1,4 +1,4 @@
-package mysql
+package mysqldriver
 
 import (
 	"fmt"
@@ -7,16 +7,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var _ migration.Migrator = (*MysqlDriver)(nil)
+var _ migration.Migrator = (*Server)(nil)
 
-func (my *MysqlDriver) Migrate() error {
+func (my *Server) Migrate() error {
 
 	// nerver do action when database target is not same
 	if my.DbName != my.MigrationDB.Name() {
 		return fmt.Errorf("dsn dbname(%s) != migrator dbname(%s), skip", my.DbName, my.MigrationDB.Name())
 	}
 
-	err := my.AutoMigrate(my.MigrationDB.Tables()...)
+	err := my.db.AutoMigrate(my.MigrationDB.Tables()...)
 	if err != nil {
 		return err
 	}

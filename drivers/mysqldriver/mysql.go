@@ -1,4 +1,4 @@
-package mysql
+package mysqldriver
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type MysqlDriver struct {
+type Server struct {
 	Host               string `env:""`
 	Port               int    `env:""`
 	User               string `env:""`
@@ -24,10 +24,10 @@ type MysqlDriver struct {
 	// database to magrate
 	MigrationDB *migration.Database `env:"-"`
 
-	*gorm.DB `env:"-"`
+	db *gorm.DB `env:"-"`
 }
 
-func (my *MysqlDriver) SetDefaults() {
+func (my *Server) SetDefaults() {
 	if my.Port == 0 {
 		my.Port = 3306
 	}
@@ -50,18 +50,18 @@ func (my *MysqlDriver) SetDefaults() {
 	}
 }
 
-func (my *MysqlDriver) Init() {
+func (my *Server) Init() {
 	my.SetDefaults()
 
-	if my.DB == nil {
+	if my.db == nil {
 		_ = my.conn()
 	}
 
 	go my.livenessChecking()
 }
 
-func (my *MysqlDriver) ping() error {
-	sqldb, err := my.DB.DB()
+func (my *Server) ping() error {
+	sqldb, err := my.db.DB()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (my *MysqlDriver) ping() error {
 	return sqldb.Ping()
 }
 
-func (my *MysqlDriver) retry(counter int) (err error) {
+func (my *Server) retry(counter int) (err error) {
 
 	// max retry interval 30s
 	if counter > 6 {
@@ -87,7 +87,7 @@ func (my *MysqlDriver) retry(counter int) (err error) {
 }
 
 // livenessChecking liveness checking
-func (my *MysqlDriver) livenessChecking() {
+func (my *Server) livenessChecking() {
 
 	for {
 		// liveness checking every 60s
@@ -115,7 +115,7 @@ func (my *MysqlDriver) livenessChecking() {
 }
 
 // conn database connection
-func (my *MysqlDriver) conn() error {
+func (my *Server) conn() error {
 
 	_dsn_ := `%s:%s@tcp(%s:%d)/%s?%s`
 	dsn := fmt.Sprintf(_dsn_,
@@ -142,11 +142,11 @@ func (my *MysqlDriver) conn() error {
 	sqldb.SetConnMaxIdleTime(time.Duration(my.ConnMaxIdleSeconds) * time.Second)
 	sqldb.SetMaxIdleConns(my.MaxIdleConns)
 	sqldb.SetMaxOpenConns(my.MaxOpenConns)
-	my.DB = db
+	my.db = db
 
 	return nil
 }
 
-func (my *MysqlDriver) DBDriver() *gorm.DB {
-	return my.DB
+func (my *Server) GormDB() *gorm.DB {
+	return my.db
 }
