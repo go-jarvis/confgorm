@@ -1,18 +1,22 @@
 package migration
 
-import "github.com/sirupsen/logrus"
+import (
+	"errors"
+)
+
+var (
+	ErrNotMigrator = errors.New("db driver does not a migrator")
+)
 
 type Migrator interface {
-	Migrate()
+	Migrate() error
 }
 
-func Magrate(driver interface{}) {
+func Magrate(driver interface{}) error {
 	migrator, ok := driver.(Migrator)
 	if !ok {
-		logrus.Warnf("db driver does not a migrator")
-		return
+		return ErrNotMigrator
 	}
 
-	migrator.Migrate()
-
+	return migrator.Migrate()
 }

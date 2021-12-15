@@ -16,6 +16,7 @@ type MysqlDriver struct {
 	User               string `env:""`
 	Password           string `env:""`
 	DbName             string `env:""`
+	ConnectionOptions  string `env:""`
 	MaxOpenConns       int
 	MaxIdleConns       int
 	ConnMaxIdleSeconds int
@@ -32,6 +33,10 @@ func (my *MysqlDriver) SetDefaults() {
 	}
 	if my.Host == "" {
 		my.Host = "127.0.0.1"
+	}
+
+	if my.ConnectionOptions == "" {
+		my.ConnectionOptions = "charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
 	if my.MaxIdleConns == 0 {
@@ -112,11 +117,13 @@ func (my *MysqlDriver) livenessChecking() {
 // conn database connection
 func (my *MysqlDriver) conn() error {
 
-	_dsn_ := `%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local`
+	_dsn_ := `%s:%s@tcp(%s:%d)/%s?%s`
 	dsn := fmt.Sprintf(_dsn_,
 		my.User, my.Password,
 		my.Host, my.Port,
-		my.DbName)
+		my.DbName,
+
+		my.ConnectionOptions)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {

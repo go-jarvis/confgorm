@@ -9,14 +9,18 @@ import (
 
 var _ migration.Migrator = (*MysqlDriver)(nil)
 
-func (my *MysqlDriver) Migrate() {
+func (my *MysqlDriver) Migrate() error {
 
 	// nerver do action when database target is not same
 	if my.DbName != my.MigrationDB.Name() {
-		fmt.Printf("%+v", my)
-		logrus.Warnf("dsn dbname(%s) != migrator dbname(%s), skip", my.DbName, my.MigrationDB.Name())
-		return
+		return fmt.Errorf("dsn dbname(%s) != migrator dbname(%s), skip", my.DbName, my.MigrationDB.Name())
 	}
 
-	my.AutoMigrate(my.MigrationDB.Tables()...)
+	err := my.AutoMigrate(my.MigrationDB.Tables()...)
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("auto migrate success: db(%s)", my.DbName)
+	return nil
 }
